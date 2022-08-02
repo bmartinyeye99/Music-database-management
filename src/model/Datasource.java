@@ -2,6 +2,7 @@ package model;
 
 import org.cef.misc.CefPdfPrintSettings;
 
+import javax.xml.transform.Result;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,28 +25,6 @@ public class Datasource {
     private static final String COLUMN_SONG_TITLE = "title";
     private static final String COLUMN_SONG_ALBUM = "album";
 
-    /*
-    FIRST inner join joins songs and albums where record in table SONGS has = album id to album id from
-    table ALBUMS
-    SECOND inner join joins table ARTISTS and ALBUMS where col.artist in ALBUMS is = to ID from ARTISTS table.
-
-    query returns artists,their albums and the searched song from the two joins
-     */
-    public static final String QUERY_ARTIST_OR_SONG_START =
-            "SELECT " + TABLE_ARTISTS + "." + COLUMN_ARTIST_NAME + ", "+
-                    TABLE_ALBUMS + "." + COLUMN_ALBUM_NAME + ", "+
-                    TABLE_SONGS + "." + COLUMN_SONG_TRACK +
-                    "FROM "+
-                        TABLE_SONGS +  " INNER JOIN " + TABLE_ALBUMS + " ON " +
-                        TABLE_SONGS + "." + COLUMN_SONG_ALBUM + " = " + TABLE_ALBUMS + "." + COLUMN_ALBUM_ID +
-                           " INNER JOIN " + TABLE_ARTISTS + " ON " + TABLE_ALBUMS + "." + COLUMN_ALBUM_ARTIST + " = " +
-                            TABLE_ARTISTS + "." + COLUMN_ARTIST_ID +
-
-            " WHERE " + TABLE_SONGS + "." + COLUMN_SONG_TITLE + " = \"";
-
-    public static final String QUERY_ARTIST_FOR_SONG_SORT =
-            " ORDER BY " + TABLE_ARTISTS + "." + COLUMN_ARTIST_NAME + ", "
-            +TABLE_ALBUMS + "." + COLUMN_ALBUM_NAME + "COLLATE NOCASE";
 
     public static final int ORDER_BY_ASC = 3;
     public static final int ORDER_BY_DESC = 2;
@@ -66,6 +45,32 @@ public class Datasource {
      */
     public static final String QUERY_ALBUMS_BY_ARTIST_SORT =
             " ORDER BY " + TABLE_ALBUMS + "." + COLUMN_ALBUM_NAME + " COLLATE NOCASE ";
+
+
+    /*
+  FIRST inner join joins songs and albums where record in table SONGS has = album id to album id from
+  table ALBUMS
+  SECOND inner join joins table ARTISTS and ALBUMS where col.artist in ALBUMS is = to ID from ARTISTS table.
+
+  query returns artists,their albums and the searched song from the two joins
+   */
+    public static final String QUERY_ARTIST_OR_SONG_START =
+            "SELECT " + TABLE_ARTISTS + "." + COLUMN_ARTIST_NAME + ", "+
+                    TABLE_ALBUMS + "." + COLUMN_ALBUM_NAME + ", "+
+                    TABLE_SONGS + "." + COLUMN_SONG_TRACK +
+                    " FROM "+
+                    TABLE_SONGS +  " INNER JOIN " + TABLE_ALBUMS + " ON " +
+                    TABLE_SONGS + "." + COLUMN_SONG_ALBUM + " = " + TABLE_ALBUMS + "." + COLUMN_ALBUM_ID +
+                    " INNER JOIN " + TABLE_ARTISTS + " ON " + TABLE_ALBUMS + "." + COLUMN_ALBUM_ARTIST + " = " +
+                    TABLE_ARTISTS + "." + COLUMN_ARTIST_ID +
+
+                    " WHERE " + TABLE_SONGS + "." + COLUMN_SONG_TITLE + " = \"";
+
+    public static final String QUERY_ARTIST_FOR_SONG_SORT =
+            " ORDER BY " + TABLE_ARTISTS + "." + COLUMN_ARTIST_NAME + ", "
+                    +TABLE_ALBUMS + "." + COLUMN_ALBUM_NAME + " COLLATE NOCASE ";
+
+
 
     private Connection conn;
 
@@ -165,5 +170,42 @@ public class Datasource {
 
     }
 
+
+    // function returns the artist, album and the tracknumber for the required song
+    public List<SongArtist> queryArtistsforSong (String songname, int sorOrder){
+
+        StringBuilder sb = new StringBuilder(QUERY_ARTIST_OR_SONG_START);
+        sb.append(songname);
+        sb.append("\"");
+
+        if (sorOrder != ORDER_BY_NONE){
+            sb.append(QUERY_ARTIST_FOR_SONG_SORT);
+            if (sorOrder == ORDER_BY_DESC)
+                sb.append("DESC");
+            else sb.append("ASC");
+
+        }
+        System.out.println("SQL Statement: " + sb.toString());
+
+        try (Statement statement = conn.createStatement();
+             ResultSet results = statement.executeQuery(sb.toString())){
+
+            List<SongArtist> songArtists = new ArrayList<>();
+
+            while (results.next()){
+                SongArtist songArtist = new SongArtist();
+                songArtist.setArtistName(results.getString(1));
+                songArtist.setAlbumname(results.getString(2));
+                songArtist.setTrack(results.getInt(3));
+                songArtists.add(songArtist);
+            }
+            return songArtists;
+
+        } catch (SQLException e) {
+            System.out.println("Query failed: " + e.getMessage());
+            return null;
+        }
+
+    }
 
 }
