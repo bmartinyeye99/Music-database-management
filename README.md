@@ -8,4 +8,6 @@ This is a desktop application which provides CRUD functionalities into a music d
   - SQL
   - Transactions
   - InteliJ
+
+
 This application is part of an udemy course : Java Programming Masterclass updated to Java 17
